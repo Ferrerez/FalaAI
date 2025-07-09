@@ -625,3 +625,39 @@ form .wa-send-mobile, .wa-send-mobile {
     padding: 18px 6px 12px 6px;
   }
 } 
+
+.chat-back-btn-mobile {
+  background: none;
+  border: none;
+  color: #23263a;
+  font-size: 1.4rem;
+  margin-right: 8px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  vertical-align: middle;
+}
+.chat-back-btn-mobile:hover {
+  background: #f0f0f0;
+} 
+
+.chat-load-more {
+  display: block;
+  margin: 0 auto 16px auto;
+  background: #35384a;
+  color: #fff;
+  font-size: 1rem;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.chat-load-more:hover:enabled {
+  background: #23263a;
+}
+.chat-load-more:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+} 

@@ -959,8 +959,11 @@ input.preenchido {
 }
 
 .chat-list {
-  flex: 1;
-  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 .chat-item {
@@ -2353,15 +2356,14 @@ body {
   gap: 12px;
 } 
 
-/* Botão de enviar só no mobile */
-form .wa-send-mobile, .wa-send-mobile {
+/* form .wa-send-mobile, .wa-send-mobile {
   display: none !important;
 }
 @media (max-width: 700px) {
   form .wa-send-mobile, .wa-send-mobile {
     display: inline-flex !important;
   }
-}
+}*/
 
 /* Responsividade geral do chat */
 .chat-app-container, .chat-app-main, .wa-main, .wa-main-waweb {
@@ -2377,7 +2379,7 @@ form .wa-send-mobile, .wa-send-mobile {
 }
 @media (max-width: 900px) {
   .chat-list-section {
-    width: 100vw !important;
+    width: 100% !important;
     min-width: 0;
     border-radius: 0 !important;
     margin: 0 !important;
@@ -2393,7 +2395,7 @@ form .wa-send-mobile, .wa-send-mobile {
   .wa-sidebar-chats, .chat-list {
     flex-direction: row;
     overflow-x: auto;
-    width: 100vw;
+    width: 100%;
     min-width: 0;
   }
   .wa-main, .wa-main-waweb, .chat-main {
@@ -2425,3 +2427,93 @@ form .wa-send-mobile, .wa-send-mobile {
     border-radius: 0 0 16px 16px !important;
   }
 } 
+
+.chat-list-title {
+  color: #fff !important;
+  background: #111;
+  z-index: 2;
+  position: relative;
+  pointer-events: auto;
+  display: block;
+  font-weight: bold;
+  text-shadow: 0 1px 8px #e3e8f0;
+  border-radius: 8px;
+  padding: 4px 0 4px 0;
+  margin-bottom: 12px;
+}
+
+/* Destacar opção selecionada do menu lateral */
+.sidebar-nav-item.active {
+  background: #1976d2 !important;
+  color: #fff !important;
+  border-radius: 8px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(25,118,210,0.10);
+  transition: background 0.2s, color 0.2s;
+}
+.sidebar-nav-item.active .sidebar-nav-label {
+  color: #fff !important;
+}
+.sidebar-nav-item {
+  transition: background 0.2s, color 0.2s;
+} 
+
+.fab-novo-contato {
+  transition: background 0.2s, color 0.2s, transform 0.18s;
+}
+.fab-novo-contato:hover {
+  background: #1251a3;
+  transform: scale(1.12);
+}
+
+.chat-list-item {
+  width: 100%;
+  max-width: 100%;
+  min-height: 56px;
+  background: #23263a;
+  border-radius: 16px;
+  margin: 8px 0;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(25,118,210,0.07);
+  padding: 12px 16px;
+  transition: background 0.18s, box-shadow 0.18s;
+  overflow: hidden;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.delete-chat-btn {
+  float: right;
+  margin-left: 12px;
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  transition: opacity 0.2s, background 0.2s;
+  z-index: 10;
+}
+.delete-chat-btn:hover {
+  opacity: 1;
+  background: rgba(211,47,47,0.08);
+}
+
+@media (max-width: 700px) {
+  .chat-list-item {
+    min-height: 48px;
+    padding: 10px 60px 10px 12px;
+    border-radius: 12px;
+  }
+  .delete-chat-btn {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+  }
+}
