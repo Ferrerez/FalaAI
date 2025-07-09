@@ -364,7 +364,6 @@ function ChatApp() {
           <div className="wa-modal wa-modal-contacts" onClick={e => e.stopPropagation()}>
             <div className="wa-modal-header">
               <div className="wa-modal-title">Contatos</div>
-              <button className="wa-modal-close" onClick={() => setShowContactsModal(false)}>Fechar</button>
             </div>
             <div className="wa-modal-list">
               {users.map(otherUser => (
@@ -383,6 +382,7 @@ function ChatApp() {
                 </div>
               ))}
             </div>
+            <button className="wa-modal-close wa-modal-close-bottom" onClick={() => setShowContactsModal(false)}>Fechar</button>
           </div>
         </div>
       )}

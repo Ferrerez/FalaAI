@@ -519,34 +519,34 @@ form .wa-send-mobile, .wa-send-mobile {
   justify-content: center;
   position: relative;
   margin-bottom: 18px;
+  min-height: 36px;
 }
 .wa-modal-title {
-  flex: 1;
+  flex: 1 1 auto;
   color: #fff;
   font-size: 1.25rem;
   font-weight: 700;
   text-align: center;
-  padding: 0;
+  padding: 0 40px 0 12px;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .wa-modal-close {
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-}
-.wa-modal-close {
-  position: absolute;
-  top: 12px;
-  right: 18px;
   background: none;
   border: none;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 6px;
   transition: background 0.2s;
+  z-index: 2;
 }
 .wa-modal-close:hover {
   background: #35384a;
@@ -601,6 +601,22 @@ form .wa-send-mobile, .wa-send-mobile {
 .wa-modal-user-status {
   color: #b0b3c6;
   font-size: 0.95rem;
+}
+.wa-modal-close-bottom {
+  position: static;
+  margin: 18px auto 0 auto;
+  display: block;
+  background: #35384a;
+  color: #fff;
+  font-size: 1rem;
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.wa-modal-close-bottom:hover {
+  background: #23263a;
 }
 @media (max-width: 700px) {
   .wa-modal {
