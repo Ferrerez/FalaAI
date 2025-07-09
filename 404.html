@@ -1,0 +1,7 @@
+<script>
+  // Redireciona qualquer rota para o index.html, preservando o caminho
+  var path = window.location.pathname;
+  var search = window.location.search;
+  var hash = window.location.hash;
+  window.location.replace('/FalaAI/index.html?redirect=' + encodeURIComponent(path + search + hash));
+</script> 
