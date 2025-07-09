@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/FalaAI/static/css/main.38bc1ae5.css",
-    "main.js": "/FalaAI/static/js/main.7a061045.js",
+    "main.css": "/FalaAI/static/css/main.f251f93c.css",
+    "main.js": "/FalaAI/static/js/main.e6a5996e.js",
     "static/js/453.709340e7.chunk.js": "/FalaAI/static/js/453.709340e7.chunk.js",
     "index.html": "/FalaAI/index.html",
     "static/media/wa-bg-falaai.svg": "/FalaAI/static/media/wa-bg-falaai.414a4d080c059f404b25.svg",
-    "main.38bc1ae5.css.map": "/FalaAI/static/css/main.38bc1ae5.css.map",
-    "main.7a061045.js.map": "/FalaAI/static/js/main.7a061045.js.map",
+    "main.f251f93c.css.map": "/FalaAI/static/css/main.f251f93c.css.map",
+    "main.e6a5996e.js.map": "/FalaAI/static/js/main.e6a5996e.js.map",
     "453.709340e7.chunk.js.map": "/FalaAI/static/js/453.709340e7.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.38bc1ae5.css",
-    "static/js/main.7a061045.js"
+    "static/css/main.f251f93c.css",
+    "static/js/main.e6a5996e.js"
   ]
 }
