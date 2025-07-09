@@ -1,0 +1,656 @@
+html, body {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #23272f;
+  overflow: hidden;
+}
+
+.login-main {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.login-left {
+  flex: 1;
+  background: linear-gradient(135deg, #1fd1f9 0%, #39ff8f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-bg-img {
+  max-width: 480px;
+  width: 90%;
+  border-radius: 24px;
+  box-shadow: 0 16px 48px 0 rgba(0,0,0,0.32), 0 4px 16px rgba(41,121,255,0.13);
+  object-fit: cover;
+  transition: transform 0.35s cubic-bezier(.4,2,.3,1), box-shadow 0.25s;
+}
+
+.login-bg-img:hover {
+  transform: scale(1.06);
+  box-shadow: 0 24px 64px 0 rgba(0,0,0,0.38), 0 8px 24px rgba(41,121,255,0.18);
+}
+
+.login-right {
+  flex: 1;
+  background: #f7f8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-box {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(41,121,255,0.10);
+  border: 1.5px solid #e3e8f0;
+  padding: 0.4rem 1.2rem 0.6rem 1.2rem;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  margin: 0.1rem 0 0.3rem 0;
+}
+
+.logo-login {
+  width: 200px;
+  height: auto;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.login-title {
+  color: #23272f;
+  font-size: 1.15rem;
+  font-weight: bold;
+  margin: 0 0 0.3rem 0;
+  text-align: center;
+}
+
+.login-desc {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.login-subtitle {
+  color: #23272f;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+  text-align: center;
+}
+
+form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  color: #23272f;
+  font-weight: 500;
+  margin-top: 0.2rem;
+  margin-bottom: 0.08rem;
+}
+
+input {
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  margin-bottom: 0.10rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  background: #f7f8fa;
+  box-shadow: 0 1px 4px rgba(41,121,255,0.07);
+}
+
+input:focus {
+  border: 1.5px solid #1fd1f9;
+  box-shadow: 0 0 0 2px #1fd1f933;
+}
+
+button {
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 0.2rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(41,121,255,0.13);
+}
+
+button:hover {
+  background: #1565c0;
+  box-shadow: 0 4px 16px rgba(41,121,255,0.18);
+}
+
+.login-register {
+  color: #23272f;
+  margin-top: 1.2rem;
+  font-size: 0.98rem;
+  text-align: center;
+}
+
+.login-register a {
+  color: #2979ff;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 0.2rem;
+  transition: color 0.2s;
+}
+
+.login-register a:hover {
+  color: #1565c0;
+}
+
+@media (max-width: 900px) {
+  .login-left {
+    display: none;
+  }
+  .login-main {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+  }
+  .login-right {
+    width: 100vw;
+    min-height: unset;
+    padding: 0 4vw;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  .login-box {
+    max-width: 98vw;
+    padding: 0.3rem 2vw 0.5rem 2vw;
+  }
+}
+
+@media (max-width: 600px) {
+  .login-left {
+    display: none;
+  }
+  .login-main {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+  }
+  .login-right {
+    width: 100vw;
+    min-height: unset;
+    padding: 0 4vw;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  .login-box {
+    max-width: 99vw;
+    padding: 0.2rem 3vw 0.3rem 3vw;
+  }
+  .logo-login {
+    width: 180px;
+    margin-bottom: 0.3rem;
+  }
+}
+
+/* Estilos do Facebook para o formulário */
+.form-group {
+  position: relative;
+  margin-bottom: 0.8rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #fff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  border-color: #1877f2;
+  box-shadow: 0 0 0 2px #e7f3ff;
+  outline: none;
+}
+
+.form-group input::placeholder {
+  color: #90949c;
+  font-size: 1rem;
+}
+
+/* Estados de validação */
+.form-group input.is-invalid {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+.form-group input.is-valid {
+  border-color: #27ae60;
+  box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  display: none;
+}
+
+.error-message.show {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Checkbox estilo Facebook */
+.form-options {
+  margin: 0.5rem 0 1rem 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #606770;
+  user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #dddfe2;
+  border-radius: 2px;
+  margin-right: 0.5rem;
+  position: relative;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark {
+  background: #1877f2;
+  border-color: #1877f2;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Botão estilo Facebook */
+button[type="submit"] {
+  width: 100%;
+  background: #1877f2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+button[type="submit"]:hover {
+  background: #166fe5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+}
+
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+button[type="submit"]:disabled {
+  background: #e4e6eb;
+  color: #bcc0c4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading spinner */
+.btn-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Animações suaves */
+.form-group {
+  animation: slideInUp 0.5s ease;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.2s; }
+.form-options { animation-delay: 0.3s; }
+button[type="submit"] { animation-delay: 0.4s; }
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Container de senha com ícone de olho */
+.password-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-container input {
+  padding-right: 45px;
+  width: 100%;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #90949c;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.toggle-password:hover {
+  background: #f0f2f5;
+  color: #1877f2;
+}
+
+.toggle-password:focus {
+  outline: none;
+  background: #e7f3ff;
+  color: #1877f2;
+}
+
+.eye-icon,
+.eye-slash-icon {
+  width: 20px;
+  height: 20px;
+  transition: all 0.2s ease;
+}
+
+.toggle-password:hover .eye-icon,
+.toggle-password:hover .eye-slash-icon {
+  transform: scale(1.1);
+}
+
+/* Estilos para o checkbox "Lembrar-me" */
+.lembrar-container {
+  margin: 0.8rem 0 1.2rem 0;
+}
+
+.lembrar-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #606770;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.lembrar-label:hover {
+  color: #1877f2;
+}
+
+.lembrar-label input[type="checkbox"] {
+  display: none;
+}
+
+.lembrar-label .checkmark {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #dddfe2;
+  border-radius: 2px;
+  margin-right: 0.5rem;
+  position: relative;
+  background: #fff;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.lembrar-label:hover .checkmark {
+  border-color: #1877f2;
+}
+
+.lembrar-label input[type="checkbox"]:checked + .checkmark {
+  background: #1877f2;
+  border-color: #1877f2;
+}
+
+.lembrar-label input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Estilo para campos preenchidos automaticamente */
+input.preenchido {
+  border-color: #4CAF50 !important;
+  background-color: #f8fff8;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* Responsividade para o checkbox */
+@media (max-width: 600px) {
+  .lembrar-label {
+    font-size: 0.85rem;
+  }
+  
+  .lembrar-label .checkmark {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .lembrar-label input[type="checkbox"]:checked + .checkmark::after {
+    left: 4px;
+    top: 1px;
+    width: 3px;
+    height: 7px;
+  }
+}
+
+/* ===== Facebook Form Style ===== */
+.fb-valid {
+  border-color: #42b72a !important;
+  background: #f8fff8;
+  box-shadow: 0 0 0 2px rgba(66,183,42,0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fb-invalid {
+  border-color: #e53935 !important;
+  background: #fff8f8;
+  box-shadow: 0 0 0 2px rgba(229,57,53,0.12);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fb-error-msg {
+  color: #e53935;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
+  display: none;
+  animation: fbFadeIn 0.3s;
+}
+
+.fb-valid:focus {
+  border-color: #42b72a !important;
+}
+
+.fb-invalid:focus {
+  border-color: #e53935 !important;
+}
+
+@keyframes fbFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Esqueci a senha */
+.esqueci-senha-container {
+  text-align: right;
+  margin-bottom: 0.7rem;
+}
+.esqueci-senha-container a {
+  color: #1877f2;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.esqueci-senha-container a:hover {
+  text-decoration: underline;
+  color: #145db2;
+}
+
+/* Modal Facebook Style */
+.modal-fb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.25);
+  animation: fbFadeIn 0.2s;
+}
+.modal-fb-content {
+  background: #fff;
+  border-radius: 10px;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  min-width: 320px;
+  max-width: 90vw;
+  position: relative;
+  animation: fbFadeIn 0.3s;
+}
+.modal-fb-content h2 {
+  margin-top: 0;
+  color: #1877f2;
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+.modal-fb-content p {
+  color: #444;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+.modal-fb-content input[type="email"] {
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 6px;
+  border: 1px solid #ccd0d5;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+.modal-fb-content button[type="submit"] {
+  width: 100%;
+  background: #1877f2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.2rem;
+  transition: background 0.2s;
+}
+.modal-fb-content button[type="submit"]:hover {
+  background: #145db2;
+}
+.modal-fb-close {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 1.5rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.modal-fb-close:hover {
+  color: #e53935;
+}
+@media (max-width: 500px) {
+  .modal-fb-content {
+    min-width: 90vw;
+    padding: 1.2rem 0.7rem 1rem 0.7rem;
+  }
+} 
