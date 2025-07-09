@@ -52,11 +52,11 @@ function Login() {
   return (
     <div className="login-main">
       <div className="login-left">
-        <img src="/assets/images/bannerlogin.jpg" alt="Banner de login" className="login-bg-img" />
+        <img src={process.env.PUBLIC_URL + '/assets/images/bannerlogin.jpg'} alt="Banner de login" className="login-bg-img" />
       </div>
       <div className="login-right">
         <div className="login-box">
-          <img src="/assets/images/logoLogin.png" alt="Logo FalaE" className="logo-login" />
+          <img src={process.env.PUBLIC_URL + '/assets/images/logoLogin.png'} alt="Logo FalaE" className="logo-login" />
           <h2 className="login-title">Simples, Seguro e totalmente BRASILEIRO.</h2>
           <p className="login-desc">
             Com o FalaAI, você terá mensagens rápidas, simples e seguras, disponível para todos.
