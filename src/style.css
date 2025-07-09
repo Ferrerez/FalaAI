@@ -2352,3 +2352,76 @@ body {
   text-align: left;
   gap: 12px;
 } 
+
+/* Botão de enviar só no mobile */
+form .wa-send-mobile, .wa-send-mobile {
+  display: none !important;
+}
+@media (max-width: 700px) {
+  form .wa-send-mobile, .wa-send-mobile {
+    display: inline-flex !important;
+  }
+}
+
+/* Responsividade geral do chat */
+.chat-app-container, .chat-app-main, .wa-main, .wa-main-waweb {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.wa-sidebar, .sidebar {
+  min-width: 70px;
+  width: 70px;
+  max-width: 90vw;
+  box-sizing: border-box;
+}
+@media (max-width: 900px) {
+  .chat-list-section {
+    width: 100vw !important;
+    min-width: 0;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  .wa-sidebar, .sidebar {
+    width: 100vw;
+    min-width: 0;
+    flex-direction: row;
+    height: 60px;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 8px;
+  }
+  .wa-sidebar-chats, .chat-list {
+    flex-direction: row;
+    overflow-x: auto;
+    width: 100vw;
+    min-width: 0;
+  }
+  .wa-main, .wa-main-waweb, .chat-main {
+    margin: 0 !important;
+    border-radius: 0 0 24px 24px !important;
+    width: 100vw;
+    min-width: 0;
+  }
+}
+@media (max-width: 700px) {
+  .chat-app-container, .chat-app-main {
+    flex-direction: column !important;
+    width: 100vw;
+    min-width: 0;
+  }
+  .wa-main, .wa-main-waweb, .chat-main {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    width: 100vw;
+    min-width: 0;
+  }
+  .wa-messages, .wa-messages-waweb, .chat-messages {
+    padding: 8px !important;
+    gap: 12px !important;
+    min-width: 0;
+  }
+  .wa-input-form-waweb, .chat-input-area {
+    padding: 10px 8px !important;
+    border-radius: 0 0 16px 16px !important;
+  }
+} 

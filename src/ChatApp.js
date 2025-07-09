@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, push, onValue, off, set, serverTimestamp, query, orderByChild } from 'firebase/database';
 import { auth, db } from './firebase';
+import './CustomChatLayout.css';
 import { FiSearch, FiVideo, FiPhone, FiMoreVertical, FiSmile, FiPaperclip, FiSend, FiMic, FiEdit2, FiLogOut, FiPlus } from 'react-icons/fi';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
@@ -29,6 +30,17 @@ function ChatApp() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [chatsWithMessages, setChatsWithMessages] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
+  const [showChat, setShowChat] = useState(false); // Para mobile
+  const [showContactsModal, setShowContactsModal] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 700);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Carregar mensagens do chat selecionado
   useEffect(() => {
@@ -179,6 +191,25 @@ function ChatApp() {
     setSelectedChat(chatId);
   };
 
+  // Ao selecionar um chat no mobile, mostrar a tela de chat
+  const handleSelectChat = (chatId) => {
+    setSelectedChat(chatId);
+    if (isMobile) setShowChat(true);
+  };
+
+  // Ao clicar em voltar no mobile, mostrar a lista de chats
+  const handleBackToChats = () => {
+    setShowChat(false);
+  };
+
+  // Função para abrir chat com contato
+  const handleOpenContactChat = (userId) => {
+    const chatId = [user.uid, userId].sort().join('_');
+    setSelectedChat(chatId);
+    setShowContactsModal(false);
+    if (isMobile) setShowChat(true);
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#f0f2f5' }}>
@@ -206,229 +237,153 @@ function ChatApp() {
   };
 
   return (
-    <div className="wa-wrapper">
-      {/* Sidebar */}
-      <div className="wa-sidebar">
-        <div className="wa-sidebar-header">
-          <div className="wa-sidebar-user">
-            <div className="wa-avatar">
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || user.email} />
-              ) : (
-                <div className="wa-avatar-fallback">{getInitials(user?.displayName || user?.email)}</div>
-              )}
+    <div className="chat-app-container">
+      {/* Sidebar e lista de chats juntos no mobile quando showChat for false */}
+      {(!isMobile || (isMobile && !showChat)) && (
+        <>
+          <aside className="sidebar">
+            <div className="sidebar-logo">
+              <img src={process.env.PUBLIC_URL + '/assets/images/logoLogin.png'} alt="Logo" className="sidebar-logo-img" />
             </div>
-            <div className="wa-sidebar-user-info">
-              <div className="wa-sidebar-user-name">{user?.displayName || user?.email}</div>
-              <div className="wa-sidebar-user-status">online</div>
-            </div>
-          </div>
-          <div className="wa-sidebar-actions">
-            <button className="wa-sidebar-action" onClick={handleLogout} title="Sair">
-              <FiLogOut size={20} />
-            </button>
-          </div>
-        </div>
-
-        <div className="wa-sidebar-search">
-          <div className="wa-search-input">
-            <FiSearch size={16} />
-            <input type="text" placeholder="Pesquisar ou começar uma nova conversa" />
-          </div>
-        </div>
-
-        <div className="wa-sidebar-chats">
-          {/* Chat Global */}
-          <div 
-            className={`wa-chat-item${selectedChat === 'global' ? ' active' : ''}`}
-            onClick={() => setSelectedChat('global')}
-          >
-            <div className="wa-avatar">
-              <div className="wa-avatar-fallback">🌐</div>
-            </div>
-            <div className="wa-chat-info">
-              <div className="wa-chat-name">Chat Global</div>
-              <div className="wa-chat-last-message">Conversa pública</div>
-            </div>
-          </div>
-
-          {/* Chats privados apenas se houver mensagens */}
-          {users.map((otherUser) => {
-            const chatId = [user.uid, otherUser.id].sort().join('_');
-            if (!chatsWithMessages.includes(chatId)) return null;
-            return (
-              <div 
-                key={otherUser.id}
-                className={`wa-chat-item${selectedChat === chatId ? ' active' : ''}`}
-                onClick={() => setSelectedChat(chatId)}
-              >
-                <div className="wa-avatar">
-                  {otherUser.photoURL ? (
-                    <img src={otherUser.photoURL} alt={otherUser.displayName || otherUser.email} />
-                  ) : (
-                    <div className="wa-avatar-fallback">{getInitials(otherUser.displayName || otherUser.email)}</div>
-                  )}
-                </div>
-                <div className="wa-chat-info">
-                  <div className="wa-chat-name">{otherUser.displayName || otherUser.email}</div>
-                  <div className="wa-chat-last-message">
-                    {otherUser.online ? 'online' : 'offline'}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {/* Botão flutuante de novo chat */}
-        <button className="wa-fab-newchat" onClick={() => setShowNewChatModal(true)} title="Novo chat">
-          <FiPlus size={28} />
-        </button>
-        {/* Modal de novo chat */}
-        {showNewChatModal && (
-          <div className="wa-modal-bg" onClick={() => setShowNewChatModal(false)}>
-            <div className="wa-modal" onClick={e => e.stopPropagation()}>
-              <div className="wa-modal-title">Nova conversa</div>
-              <button className="wa-modal-newcontact" onClick={async () => {
-                const nome = prompt('Nome do novo contato:');
-                if (!nome) return;
-                const email = prompt('Email do novo contato:');
-                if (!email) return;
-                // Gera um id fictício (timestamp)
-                const fakeId = 'fake_' + Date.now();
-                await set(ref(db, `users/${fakeId}`), {
-                  displayName: nome,
-                  email,
-                  photoURL: '',
-                  online: false,
-                  lastSeen: Date.now()
-                });
-                alert('Contato adicionado!');
-              }}>
-                + Novo contato
+            <nav className="sidebar-nav">
+              <button className="sidebar-nav-item active">
+                🏠
+                <span className="sidebar-nav-label">Início</span>
               </button>
-              <div className="wa-modal-list">
-                {users.map(otherUser => (
-                  <div key={otherUser.id} className="wa-modal-user" onClick={() => {
-                    const chatId = [user.uid, otherUser.id].sort().join('_');
-                    setSelectedChat(chatId);
-                    setShowNewChatModal(false);
-                  }}>
-                    <div className="wa-avatar wa-modal-avatar">
-                      {otherUser.photoURL ? (
-                        <img src={otherUser.photoURL} alt={otherUser.displayName || otherUser.email} />
-                      ) : (
-                        <div className="wa-avatar-fallback">{getInitials(otherUser.displayName || otherUser.email)}</div>
-                      )}
+              <button className="sidebar-nav-item">
+                💼
+                <span className="sidebar-nav-label">Trabalho</span>
+              </button>
+              <button className="sidebar-nav-item" onClick={() => setShowContactsModal(true)}>
+                👥
+                <span className="sidebar-nav-label">Contatos</span>
+              </button>
+              <button className="sidebar-nav-item">
+                🗂️
+                <span className="sidebar-nav-label">Arquivos</span>
+              </button>
+              <button className="sidebar-nav-item">
+                👤
+                <span className="sidebar-nav-label">Perfil</span>
+              </button>
+              <button className="sidebar-nav-item">
+                ✏️
+                <span className="sidebar-nav-label">Editar</span>
+              </button>
+            </nav>
+            <button className="sidebar-logout" onClick={handleLogout}>
+              🚪
+              <span className="sidebar-nav-label">Sair</span>
+            </button>
+          </aside>
+          <section className="chat-list-section">
+            <div className="chat-list-logo">
+              <img src={process.env.PUBLIC_URL + '/assets/images/logoLogin.png'} alt="Logo" className="chat-list-logo-img" />
+            </div>
+            <div className="chat-list-header">
+              <input className="chat-search" placeholder="Search" />
+            </div>
+            <ul className="chat-list">
+              {users.map((otherUser) => {
+                const chatId = [user.uid, otherUser.id].sort().join('_');
+                if (!chatsWithMessages.includes(chatId)) return null;
+                return (
+                  <li key={otherUser.id} className={`chat-list-item${selectedChat === chatId ? ' active' : ''}`} onClick={() => handleSelectChat(chatId)}>
+                    {otherUser.photoURL ? (
+                      <img className="chat-avatar" src={otherUser.photoURL} alt={otherUser.displayName || otherUser.email} />
+                    ) : (
+                      <div className="chat-avatar">{getInitials(otherUser.displayName || otherUser.email)}</div>
+                    )}
+                    <div className="chat-info">
+                      <div className="chat-title">{otherUser.displayName || otherUser.email}</div>
+                      <div className="chat-last-msg">{otherUser.online ? 'online' : 'offline'}</div>
                     </div>
-                    <div className="wa-modal-user-info">
-                      <div className="wa-modal-user-name">{otherUser.displayName || otherUser.email}</div>
-                      <div className="wa-modal-user-status">{otherUser.online ? 'online' : 'offline'}</div>
+                    <div className="chat-meta">
+                      <span className="chat-time">20m</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <button className="wa-modal-close" onClick={() => setShowNewChatModal(false)}>Fechar</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Chat Principal */}
-      <div className="wa-main wa-main-waweb">
-        <div className="wa-main-header wa-main-header-waweb">
-          {selectedChat === 'global' ? (
-            <div className="wa-main-title wa-main-title-waweb" style={{textAlign: 'center', justifyContent: 'center'}}>
-              <div className="wa-main-name wa-main-name-waweb">Chat Global</div>
-              <div className="wa-main-status wa-main-status-waweb">online</div>
-            </div>
-          ) : (
-            <div className="wa-main-title wa-main-title-private">
-              <div className="wa-avatar wa-avatar-header">
-                {getChatContact()?.photoURL ? (
-                  <img src={getChatContact().photoURL} alt={getChatContact().displayName || getChatContact().email} />
-                ) : (
-                  <div className="wa-avatar-fallback">{getInitials(getChatContact()?.displayName || getChatContact()?.email)}</div>
-                )}
-              </div>
-              <div>
-                <div className="wa-main-name wa-main-name-waweb">{getChatName()}</div>
-                <div className="wa-main-status wa-main-status-waweb">online</div>
-              </div>
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </>
+      )}
+      {/* Área principal do chat - só mostra no mobile se showChat for true */}
+      {(!isMobile || (isMobile && showChat)) && (
+        <main className="chat-main">
+          {isMobile && showChat && (
+            <button className="chat-back-btn" onClick={handleBackToChats} style={{margin: '16px 0 0 16px'}}>
+              ← Voltar
+            </button>
           )}
-          <div className="wa-main-actions">
-            <button className="wa-main-action">
-              <FiVideo size={20} />
+          <header className="chat-header">
+            <div className="chat-header-title">{getChatName()}</div>
+            <div className="chat-header-actions">
+              <button><FiSearch /></button>
+              <button><FiPhone /></button>
+              <button><FiMoreVertical /></button>
+            </div>
+          </header>
+          <div className="chat-messages">
+            {messages.map(msg => (
+              <div key={msg.id} className={`chat-message ${msg.userId === user.uid ? 'sent' : 'received'}`}>
+                {msg.avatarUrl && (
+                  <img className="message-avatar" src={msg.avatarUrl} alt={msg.userName} />
+                )}
+                <div className="message-bubble">
+                  <div className="message-author">{msg.userName}</div>
+                  <div className="message-text">{msg.text}</div>
+                  <div className="message-meta">{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          <form className="chat-input-area" onSubmit={handleSendMessage}>
+            <input
+              className="chat-input"
+              placeholder="Your message"
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
+            <button type="submit" className="chat-send-btn wa-send-mobile" tabIndex={-1} title="Enviar">
+              <FiSend size={22} />
             </button>
-            <button className="wa-main-action">
-              <FiPhone size={20} />
-            </button>
-            <button className="wa-main-action">
-              <FiSearch size={20} />
-            </button>
-            <button className="wa-main-action">
-              <FiMoreVertical size={20} />
-            </button>
+          </form>
+        </main>
+      )}
+      {/* Modal de contatos */}
+      {showContactsModal && (
+        <div className="wa-modal-bg" onClick={() => setShowContactsModal(false)}>
+          <div className="wa-modal wa-modal-contacts" onClick={e => e.stopPropagation()}>
+            <div className="wa-modal-title">Contatos</div>
+            <button className="wa-modal-close" onClick={() => setShowContactsModal(false)}>Fechar</button>
+            <div className="wa-modal-list">
+              {users.map(otherUser => (
+                <div key={otherUser.id} className="wa-modal-user" onClick={() => handleOpenContactChat(otherUser.id)}>
+                  <div className="wa-avatar wa-modal-avatar">
+                    {otherUser.photoURL ? (
+                      <img src={otherUser.photoURL} alt={otherUser.displayName || otherUser.email} />
+                    ) : (
+                      <div className="wa-avatar-fallback">{getInitials(otherUser.displayName || otherUser.email)}</div>
+                    )}
+                  </div>
+                  <div className="wa-modal-user-info">
+                    <div className="wa-modal-user-name">{otherUser.displayName || otherUser.email}</div>
+                    <div className="wa-modal-user-status">{otherUser.online ? 'online' : 'offline'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-
-        <div className="wa-messages wa-messages-waweb">
-          <MessageList
-            className="rce-message-list"
-            lockable={true}
-            toBottomHeight={"100%"}
-            dataSource={messages.map(msg => {
-              let avatar = msg.avatarUrl;
-              if (!avatar) {
-                // Gera um avatar com a inicial do nome/email usando um serviço externo
-                const initials = (msg.userName || msg.userId || '?').trim()[0].toUpperCase();
-                avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=2979ff&color=fff&size=64&bold=true`;
-              }
-              return {
-                position: msg.userId === user?.uid ? 'right' : 'left',
-                type: 'text',
-                text: msg.text,
-                date: new Date(msg.timestamp),
-                title: msg.userName,
-                avatar,
-                id: msg.id,
-              };
-            })}
-          />
-          <div ref={messagesEndRef} />
-        </div>
-
-        <form className="wa-input-form-waweb" onSubmit={handleSendMessage}>
-          <button type="button" className="wa-input-icon wa-input-emoji" tabIndex={-1}>
-            <FiSmile size={22} />
-          </button>
-          <button type="button" className="wa-input-icon wa-input-attach" tabIndex={-1}>
-            <FiPaperclip size={22} />
-          </button>
-          <input
-            className="wa-input wa-input-waweb"
-            placeholder="Digite sua mensagem..."
-            value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
-            autoFocus
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-          />
-          <button type="button" className="wa-input-icon wa-input-mic" tabIndex={-1}>
-            <FiMic size={22} />
-          </button>
-        </form>
-        
-        {errorMessage && (
-          <div style={{ color: '#ff5252', margin: '8px 0 0 0', textAlign: 'center', fontSize: '0.97rem' }}>
-            {errorMessage}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
