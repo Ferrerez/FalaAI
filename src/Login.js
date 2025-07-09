@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useNavigate, Link } from 'react-router-dom';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase';
 import './style.css';
 
@@ -25,7 +25,7 @@ function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, senha);
-    navigate('/chat');
+      navigate('/chat');
     } catch (error) {
       console.error('Erro no login:', error);
       switch (error.code) {
@@ -46,6 +46,24 @@ function Login() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Função de recuperação de senha
+  const handlePasswordReset = async () => {
+    const emailToReset = email || window.prompt('Digite seu e-mail para recuperação de senha:');
+    if (!emailToReset) return;
+    try {
+      await sendPasswordResetEmail(auth, emailToReset);
+      alert('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        alert('Usuário não encontrado para este e-mail.');
+      } else if (error.code === 'auth/invalid-email') {
+        alert('E-mail inválido.');
+      } else {
+        alert('Erro ao enviar e-mail de recuperação: ' + error.message);
+      }
     }
   };
 
@@ -106,7 +124,7 @@ function Login() {
               <button 
                 type="button" 
                 className="btn btn-link p-0 text-decoration-none"
-                onClick={() => alert('Recuperação de senha em breve!')}
+                onClick={handlePasswordReset}
               >
                 Esqueci a senha?
               </button>
@@ -116,7 +134,7 @@ function Login() {
             </button>
           </form>
           <p className="login-register">
-            Não tem uma conta? <a href="/cadastro">Cadastre-se</a>
+            Não tem uma conta? <Link to="/cadastro">Cadastre-se</Link>
           </p>
         </div>
       </div>

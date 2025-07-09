@@ -6,6 +6,13 @@ import reportWebVitals from './reportWebVitals';
 import 'react-chat-elements/dist/main.css';
 import { BrowserRouter } from 'react-router-dom';
 
+// Redireciona para a rota correta se veio do fallback do 404.html
+const params = new URLSearchParams(window.location.search);
+const redirect = params.get('redirect');
+if (redirect) {
+  window.history.replaceState({}, '', redirect);
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

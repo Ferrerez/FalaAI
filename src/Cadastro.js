@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
 import { auth, db } from './firebase';
@@ -146,7 +146,7 @@ function Cadastro() {
             </button>
           </form>
           <p className="login-register">
-            Já tem uma conta? <a href="/">Faça login</a>
+            Já tem uma conta? <Link to="/">Faça login</Link>
           </p>
         </div>
       </div>
