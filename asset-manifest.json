@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/FalaAI/static/css/main.a0b5efba.css",
+    "main.js": "/FalaAI/static/js/main.0b5b5071.js",
+    "static/js/453.709340e7.chunk.js": "/FalaAI/static/js/453.709340e7.chunk.js",
+    "index.html": "/FalaAI/index.html",
+    "static/media/wa-bg-falaai.svg": "/FalaAI/static/media/wa-bg-falaai.414a4d080c059f404b25.svg",
+    "main.a0b5efba.css.map": "/FalaAI/static/css/main.a0b5efba.css.map",
+    "main.0b5b5071.js.map": "/FalaAI/static/js/main.0b5b5071.js.map",
+    "453.709340e7.chunk.js.map": "/FalaAI/static/js/453.709340e7.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a0b5efba.css",
+    "static/js/main.0b5b5071.js"
+  ]
+}
