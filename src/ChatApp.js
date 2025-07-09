@@ -362,8 +362,10 @@ function ChatApp() {
       {showContactsModal && (
         <div className="wa-modal-bg" onClick={() => setShowContactsModal(false)}>
           <div className="wa-modal wa-modal-contacts" onClick={e => e.stopPropagation()}>
-            <div className="wa-modal-title">Contatos</div>
-            <button className="wa-modal-close" onClick={() => setShowContactsModal(false)}>Fechar</button>
+            <div className="wa-modal-header">
+              <div className="wa-modal-title">Contatos</div>
+              <button className="wa-modal-close" onClick={() => setShowContactsModal(false)}>Fechar</button>
+            </div>
             <div className="wa-modal-list">
               {users.map(otherUser => (
                 <div key={otherUser.id} className="wa-modal-user" onClick={() => handleOpenContactChat(otherUser.id)}>
