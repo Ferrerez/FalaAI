@@ -25,7 +25,7 @@ function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, senha);
-      navigate('/chat');
+    navigate('/chat');
     } catch (error) {
       console.error('Erro no login:', error);
       switch (error.code) {

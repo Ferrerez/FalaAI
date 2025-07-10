@@ -37,9 +37,9 @@ function ProtectedRoute({ children }) {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/cadastro" element={<Cadastro />} />
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
       <Route 
         path="/chat" 
         element={
@@ -48,7 +48,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-    </Routes>
+      </Routes>
   );
 }
 

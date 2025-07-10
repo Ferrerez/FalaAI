@@ -11,6 +11,8 @@ import { MessageList } from 'react-chat-elements';
 import 'react-chat-elements/dist/main.css';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebase';
+import { Picker } from 'emoji-mart';
+import 'emoji-mart/css/emoji-mart.css';
 
 function getInitials(name) {
   if (!name) return 'U';
@@ -57,6 +59,64 @@ function ChatApp() {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showLabel, setShowLabel] = useState(null);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [selectedGroupContacts, setSelectedGroupContacts] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEmojiModal, setShowEmojiModal] = useState(false);
+  const emojiList = ['😀','😂','😍','😎','😊','😉','😢','😭','😡','👍','🙏','👏','🎉','❤️','🔥','😱','😅','��','🤔','😇','🥰'];
+  // 1. Adicionar um ref para o botão de emoji
+  const emojiBtnRef = useRef(null);
+  const [emojiModalPos, setEmojiModalPos] = useState({top: 0, left: 0});
+  const emojiModalRef = useRef(null);
+  // Estado para menu flutuante do grupo
+  const [showGroupMenu, setShowGroupMenu] = useState(false);
+  const groupMenuBtnRef = useRef(null);
+
+  // Hook para fechar o balão de emoji ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        showEmojiModal &&
+        emojiModalRef.current &&
+        !emojiModalRef.current.contains(event.target) &&
+        emojiBtnRef.current &&
+        !emojiBtnRef.current.contains(event.target)
+      ) {
+        setShowEmojiModal(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showEmojiModal]);
+
+  // Hook para fechar o menu flutuante do grupo ao clicar fora
+  useEffect(() => {
+    if (!showGroupMenu) return;
+    function handleClickOutside(event) {
+      if (
+        groupMenuBtnRef.current &&
+        !groupMenuBtnRef.current.contains(event.target)
+      ) {
+        setShowGroupMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showGroupMenu]);
 
   // Função para verificar se está no final do chat
   const checkScrollToBottomBtn = () => {
@@ -158,6 +218,23 @@ function ChatApp() {
         contactsData.push({ id: child.key, ...child.val() });
       });
       setPersonalContacts(contactsData);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Carregar grupos do Firebase
+  useEffect(() => {
+    if (!user) return;
+    const groupsRef = ref(db, 'groups');
+    const unsubscribe = onValue(groupsRef, (snapshot) => {
+      const groupsData = [];
+      snapshot.forEach((childSnapshot) => {
+        const group = childSnapshot.val();
+        if (group.members && group.members.includes(user.uid)) {
+          groupsData.push({ id: childSnapshot.key, ...group });
+        }
+      });
+      setGroups(groupsData);
     });
     return () => unsubscribe();
   }, [user]);
@@ -431,6 +508,18 @@ function ChatApp() {
     );
   }
 
+  // Função para verificar se o usuário é membro do grupo selecionado
+  const isUserInSelectedGroup = () => {
+    const group = groups.find(g => g.id === selectedChat);
+    if (!group) return false;
+    return group.members && group.members.includes(user.uid);
+  };
+
+  // Função para saber se o chat selecionado é um grupo
+  const isSelectedChatGroup = () => {
+    return groups && groups.find(g => g.id === selectedChat);
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#f0f2f5' }}>
@@ -528,350 +617,198 @@ function ChatApp() {
     }
   };
 
+  // 2. Ao abrir o modal, calcular a posição do botão de emoji
+  const openEmojiModal = () => {
+    if (emojiBtnRef.current) {
+      const rect = emojiBtnRef.current.getBoundingClientRect();
+      setEmojiModalPos({
+        top: rect.top - 70, // 70px acima do botão
+        left: rect.left + rect.width/2 - 140 // centraliza o balão de 280px
+      });
+    }
+    setShowEmojiModal(true);
+  };
+
+  // Função para sair do grupo
+  const handleLeaveGroup = async () => {
+    // Remove o usuário do grupo no Firebase
+    const group = groups.find(g => g.id === selectedChat);
+    if (!group) return;
+    const newMembers = group.members.filter(uid => uid !== user.uid);
+    await set(ref(db, `groups/${group.id}/members`), newMembers);
+    setShowGroupMenu(false);
+    // Se o usuário não for mais membro, sair do chat
+    if (!newMembers.includes(user.uid)) {
+      setSelectedChat(null);
+    }
+  };
+
+  // Função para apagar grupo (só aparece se o usuário já saiu)
+  const handleDeleteGroup = () => {
+    set(ref(db, `groups/${selectedChat}`), null);
+    setSelectedChat(null);
+    setShowGroupMenu(false);
+  };
+
+  // Função para limpar conversa
+  const handleClearGroupChat = async () => {
+    await set(ref(db, `chats/${selectedChat}/messages`), null);
+    setShowGroupMenu(false);
+  };
+
   return (
     <div className="chat-app-container">
       {/* Sidebar e lista de chats juntos no mobile quando showChat for false */}
       {(!isMobile || (isMobile && !showChat)) && (
         <>
-          <aside className="sidebar" style={{position:'relative'}}>
-            <div className="sidebar-logo">
-              <img src={process.env.PUBLIC_URL + '/assets/images/logoLogin.png'} alt="Logo" className="sidebar-logo-img" />
-            </div>
-            <nav className="sidebar-nav">
-              {/* Conversas */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'conversas' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('conversas');
-                  if (selectedChat && !chatsWithMessages.includes(selectedChat)) {
-                    setSelectedChat(null);
-                  }
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('conversas')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'conversas' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  💬
-                </span>
-                {showLabel === 'conversas' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Conversas
-                  </span>
-                )}
-              </button>
-              {/* Grupos */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'grupos' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('grupos');
-                  setSelectedChat(null);
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('grupos')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'grupos' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  👥
-                </span>
-                {showLabel === 'grupos' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Grupos
-                  </span>
-                )}
-              </button>
-              {/* Contatos */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'contatos' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('contatos');
-                  setSelectedChat(null);
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('contatos')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'contatos' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <FiPhone />
-                </span>
-                {showLabel === 'contatos' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Contatos
-                  </span>
-                )}
-              </button>
-              {/* Arquivos */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'arquivos' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('arquivos');
-                  setSelectedChat(null);
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('arquivos')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'arquivos' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  🗂️
-                </span>
-                {showLabel === 'arquivos' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Arquivos
-                  </span>
-                )}
-              </button>
-              {/* Perfil */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'perfil' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('perfil');
-                  setSelectedChat(null);
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('perfil')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'perfil' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  👤
-                </span>
-                {showLabel === 'perfil' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Perfil
-                  </span>
-                )}
-              </button>
-              {/* Configurações */}
-              <button
-                className={`sidebar-nav-item${activeSidebar === 'editar' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSidebar('editar');
-                  setSelectedChat(null);
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 60
-                }}
-                onMouseEnter={() => setShowLabel('editar')}
-                onMouseLeave={() => setShowLabel(null)}
-              >
-                <span
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: showLabel === 'editar' ? 'scale(1.3)' : 'scale(1)',
-                    fontSize: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <FiSettings />
-                </span>
-                {showLabel === 'editar' && (
-                  <span
-                    style={{
-                      marginTop: 4,
-                      color: '#fff',
-                      fontSize: 13,
-                      background: 'rgba(0,0,0,0.7)',
-                      borderRadius: 6,
-                      padding: '2px 10px',
-                      minWidth: 60,
-                      textAlign: 'center',
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    Configurações
-                  </span>
-                )}
-              </button>
-            </nav>
-            <button className="sidebar-logout" onClick={handleLogout}>
-              🚪
-              <span className="sidebar-nav-label">Sair</span>
-            </button>
-          </aside>
+          {/* Removido o <aside className="sidebar" ...> da versão web */}
           <section className="chat-list-section" style={{position:'relative'}}>
-            <div className="chat-list-logo">
+            <div className="chat-list-logo" style={{display:'flex', alignItems:'center', justifyContent:'center', width:'100%', position:'relative', paddingRight:48}}>
               <img src={process.env.PUBLIC_URL + '/assets/images/logoLogin.png'} alt="Logo" className="chat-list-logo-img" />
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  boxShadow: 'none',
+                  outline: 'none',
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: 28,
+                  color: '#1976d2',
+                  cursor: 'pointer',
+                  padding: 8,
+                  zIndex: 10
+                }}
+                onClick={() => setShowMenu(v => !v)}
+                title="Menu"
+              >
+                <FiMoreVertical />
+              </button>
+              {showMenu && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 48,
+                  background: '#fff',
+                  borderRadius: 10,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                  minWidth: 180,
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  padding: '8px 0',
+                }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#222'}} onClick={() => {setShowMenu(false); /* abrir modal de configurações futuramente */}}>Configurações</button>
+                  <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#222'}} onClick={() => {setShowMenu(false); /* abrir modal de temas futuramente */}}>Temas</button>
+                  <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#d32f2f'}} onClick={handleLogout}>Sair</button>
+                </div>
+              )}
             </div>
             <div className="chat-list-header">
-              <input className="chat-search" placeholder="Search" />
+              <input 
+                className="chat-search" 
+                placeholder="Pesquisar" 
+                onFocus={() => setShowSearchModal(true)}
+                readOnly
+                style={{cursor:'pointer', background:'#f3f4f6', border:'1.5px solid #23263a', color:'#111'}}
+              />
             </div>
-            <div className="chat-list-title" style={{fontWeight:600, fontSize:20, marginTop:10, marginBottom:10, textAlign:'center'}}>
+            {/* Modal de pesquisa de chats */}
+            {showSearchModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                background: 'rgba(0,0,0,0.32)',
+                zIndex: 9999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+              }}
+                onClick={() => setShowSearchModal(false)}
+              >
+                <div style={{
+                  background: '#fff',
+                  borderRadius: 16,
+                  minWidth: 320,
+                  maxWidth: '90vw',
+                  minHeight: 180,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                  padding: 32,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxHeight: '80vh',
+                  overflowY: 'auto',
+                }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div style={{fontWeight:600, fontSize:22, marginBottom:18, color:'#1976d2'}}>Pesquisar chats</div>
+                  <button onClick={() => setShowSearchModal(false)} style={{position:'absolute',top:12,right:16,background:'none',border:'none',fontSize:26,cursor:'pointer',color:'#1976d2'}} title="Fechar">×</button>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Digite o nome do chat..."
+                    value={searchTerm}
+                    onChange={e => {
+                      setSearchTerm(e.target.value);
+                      const term = e.target.value.toLowerCase();
+                      const results = users.filter(u => (u.displayName || u.email).toLowerCase().includes(term));
+                      setSearchResults(results);
+                    }}
+                    style={{padding:'10px 12px', border:'1.5px solid #d1d5db', borderRadius:8, fontSize:16, outline:'none', width:'100%', maxWidth:340, marginBottom:16}}
+                  />
+                  <div style={{width:'100%', maxWidth:340, display:'flex', flexDirection:'column', gap:8, marginBottom:16}}>
+                    {searchTerm && searchResults.length === 0 && (
+                      <div style={{color:'#888', fontStyle:'italic', textAlign:'center', padding:'24px 0'}}>Nenhum chat encontrado.</div>
+                    )}
+                    {searchResults.map((u) => {
+                      const chatId = [user.uid, u.id].sort().join('_');
+                      return (
+                        <button key={u.id} style={{
+                          display:'flex',alignItems:'center',gap:12,padding:'10px 12px',borderRadius:8,border:'1.5px solid #d1d5db',background:'#f7f7f7',cursor:'pointer',fontSize:16,transition:'background 0.18s',color:'#222',fontWeight:500
+                        }}
+                onClick={() => {
+                            setSelectedChat(chatId);
+                            setActiveSidebar('conversas');
+                            setShowSearchModal(false);
+                            setTimeout(() => { if (isMobile) setShowChat(true); }, 0);
+                          }}
+                        >
+                          <div style={{background:'#1976d2',color:'#fff',fontWeight:600,fontSize:18,width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                            {u.displayName ? u.displayName[0].toUpperCase() : (u.email ? u.email[0].toUpperCase() : '?')}
+                          </div>
+                          <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+                            <div style={{fontWeight:600,fontSize:16}}>{u.displayName || u.email}</div>
+                            <div style={{fontSize:14,color:'#888'}}>{u.email}</div>
+                          </div>
+              </button>
+                      );
+                    })}
+            </div>
+            </div>
+              </div>
+            )}
+            <div className="chat-list-title" style={{
+  fontWeight:600,
+  fontSize:20,
+  marginTop:10,
+  marginBottom:10,
+  textAlign:'center',
+  background:'#f3f4f6',
+  border:'1.5px solid #23263a',
+  borderRadius:12,
+  color:'#111',
+}}>
               {activeSidebar === 'conversas' && 'Conversas'}
               {activeSidebar === 'grupos' && 'Grupos'}
               {activeSidebar === 'contatos' && 'Contatos'}
@@ -911,6 +848,25 @@ function ChatApp() {
                   </li>
                 );
               })}
+              {/* Grupos */}
+              {activeSidebar === 'grupos' && groups.length === 0 && (
+                <li className="chat-list-item" style={{justifyContent:'center', color:'#888', fontStyle:'italic', padding:'32px 0', textAlign:'center'}}>Nenhum grupo encontrado.</li>
+              )}
+              {activeSidebar === 'grupos' && groups.map((group) => (
+                <li key={group.id} className={`chat-list-item${selectedChat === group.id ? ' active' : ''}`} style={{cursor:'pointer'}} onClick={() => {
+                  setSelectedChat(group.id);
+                  setActiveSidebar('grupos');
+                  setTimeout(() => { if (isMobile) setShowChat(true); }, 0);
+                }}>
+                  <div style={{background:'#1976d2',color:'#fff',fontWeight:600,fontSize:18,width:44,height:44,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {group.name ? group.name[0].toUpperCase() : '?'}
+                  </div>
+                  <div className="chat-info">
+                    <div className="chat-title">{group.name}</div>
+                    <div className="chat-last-msg">{group.members && group.members.length} Membro{group.members && group.members.length > 1 ? 's' : ''}</div>
+                  </div>
+                </li>
+              ))}
               {activeSidebar === 'contatos' && personalContacts.length === 0 && (
                 <li className="chat-list-item" style={{justifyContent:'center', color:'#888', fontStyle:'italic', padding:'32px 0'}}>Nenhum contato adicionado ainda.</li>
               )}
@@ -1000,19 +956,22 @@ function ChatApp() {
                 </div>
               )}
             </ul>
-            {/* Botão flutuante de novo contato dentro da lista de chats */}
-            {activeSidebar === 'contatos' && (
+            {/* Botão flutuante de novo contato ou grupo */}
+            {(
+              (!isMobile && activeSidebar === 'conversas') ||
+              (isMobile && !showChat && activeSidebar === 'conversas')
+            ) && (
               <button 
                 className="fab-novo-contato"
-                title="Novo contato"
+                title="Novo chat"
                 style={{
                   position: 'absolute',
-                  bottom: 24,
-                  right: 24,
+                  bottom: 80,
+                  right: 32,
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  background: '#1976d2',
+                  background: 'rgba(25, 118, 210, 0.75)',
                   color: '#fff',
                   border: 'none',
                   boxShadow: '0 4px 16px rgba(25,118,210,0.18)',
@@ -1020,15 +979,303 @@ function ChatApp() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  zIndex: 100,
+                  zIndex: 2000,
                   cursor: 'pointer',
                   transition: 'background 0.2s',
+                  backdropFilter: 'blur(2px)',
                 }}
-                onClick={() => setShowNewContactModal(true)}
+                onClick={() => setShowContactsModal(true)}
               >
                 +
               </button>
             )}
+            {(
+              (!isMobile && activeSidebar === 'grupos') ||
+              (isMobile && !showChat && activeSidebar === 'grupos')
+            ) && (
+              <button 
+                className="fab-novo-contato"
+                title="Criar grupo"
+                style={{
+                  position: 'absolute',
+                  bottom: 140, // Subiu o botão
+                  right: 32,
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  background: 'rgba(25, 118, 210, 0.75)',
+                  color: '#fff',
+                  border: 'none',
+                  boxShadow: '0 4px 16px rgba(25,118,210,0.18)',
+                  fontSize: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2000,
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  backdropFilter: 'blur(2px)',
+                }}
+                onClick={() => setShowCreateGroupModal(true)}
+              >
+                <FiPlus />
+              </button>
+            )}
+            {/* Modal de contatos salvos para novo chat */}
+            {showContactsModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                background: 'rgba(0,0,0,0.32)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+                onClick={() => setShowContactsModal(false)}
+              >
+                <div style={{
+                  background: '#fff',
+                  borderRadius: 16,
+                  minWidth: 320,
+                  maxWidth: '90vw',
+                  minHeight: 180,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                  padding: 32,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxHeight: '80vh',
+                  overflowY: 'auto',
+                }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div style={{fontWeight:600, fontSize:22, marginBottom:18, color:'#1976d2'}}>Contatos</div>
+                  <button onClick={() => setShowContactsModal(false)} style={{position:'absolute',top:12,right:16,background:'none',border:'none',fontSize:26,cursor:'pointer',color:'#1976d2'}} title="Fechar">×</button>
+                  <div style={{width:'100%', maxWidth:340, display:'flex', flexDirection:'column', gap:8, marginBottom:16}}>
+                    {personalContacts.length === 0 && (
+                      <div style={{color:'#888', fontStyle:'italic', textAlign:'center', padding:'24px 0'}}>Nenhum contato salvo ainda.</div>
+                    )}
+                    {personalContacts.map((contact) => (
+                      <button key={contact.id} style={{
+                        display:'flex',alignItems:'center',gap:12,padding:'10px 12px',borderRadius:8,border:'1.5px solid #d1d5db',background:'#f7f7f7',cursor:'pointer',fontSize:16,transition:'background 0.18s',color:'#222',fontWeight:500
+                      }}
+                        onClick={() => {
+                          // Seleciona o contato e inicia o chat
+                          let existingUser = users.find(u => u.email === contact.email);
+                          let chatId;
+                          if (existingUser) {
+                            chatId = [user.uid, existingUser.id].sort().join('_');
+                          } else {
+                            const safeEmail = contact.email.replace(/[.#$\[\]]/g, '_');
+                            chatId = [user.uid, safeEmail].sort().join('_');
+                          }
+                          setSelectedChat(chatId);
+                          setActiveSidebar('conversas');
+                          setShowContactsModal(false);
+                          setTimeout(() => { if (isMobile) setShowChat(true); }, 0);
+                        }}
+                      >
+                        <div style={{background:'#1976d2',color:'#fff',fontWeight:600,fontSize:18,width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          {contact.name ? contact.name[0].toUpperCase() : '?'}
+                        </div>
+                        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+                          <div style={{fontWeight:600,fontSize:16}}>{contact.name}</div>
+                          <div style={{fontSize:14,color:'#888'}}>{contact.email}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => { setShowContactsModal(false); setShowNewContactModal(true); }} style={{marginTop:8, background:'#1976d2', color:'#fff', border:'none', borderRadius:8, padding:'12px 0', fontWeight:600, fontSize:17, cursor:'pointer', transition:'background 0.2s', width:'100%', maxWidth:340}}>
+                    Adicionar novo contato
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Modal de criação de grupo */}
+            {showCreateGroupModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                background: 'rgba(0,0,0,0.32)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+                onClick={() => setShowCreateGroupModal(false)}
+              >
+                <div style={{
+                  background: '#fff',
+                  borderRadius: 16,
+                  minWidth: 320,
+                  maxWidth: '90vw',
+                  minHeight: 180,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                  padding: 32,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxHeight: '80vh',
+                  overflowY: 'auto',
+                }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div style={{fontWeight:600, fontSize:22, marginBottom:18, color:'#1976d2'}}>Criar novo grupo</div>
+                  <button onClick={() => setShowCreateGroupModal(false)} style={{position:'absolute',top:12,right:16,background:'none',border:'none',fontSize:26,cursor:'pointer',color:'#1976d2'}} title="Fechar">×</button>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Nome do grupo"
+                    value={newGroupName}
+                    onChange={e => setNewGroupName(e.target.value)}
+                    style={{padding:'10px 12px', border:'1.5px solid #d1d5db', borderRadius:8, fontSize:16, outline:'none', width:'100%', maxWidth:340, marginBottom:16}}
+                  />
+                  <div style={{width:'100%', maxWidth:340, display:'flex', flexDirection:'column', gap:8, marginBottom:16}}>
+                    {personalContacts.length === 0 && (
+                      <div style={{color:'#888', fontStyle:'italic', textAlign:'center', padding:'24px 0'}}>Nenhum contato salvo ainda.</div>
+                    )}
+                    {personalContacts.map((contact) => (
+                      <label key={contact.id} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',cursor:'pointer'}}>
+                        <input
+                          type="checkbox"
+                          checked={selectedGroupContacts.includes(contact.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedGroupContacts(prev => [...prev, contact.id]);
+                            } else {
+                              setSelectedGroupContacts(prev => prev.filter(id => id !== contact.id));
+                            }
+                          }}
+                        />
+                        <div style={{background:'#1976d2',color:'#fff',fontWeight:600,fontSize:16,width:32,height:32,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          {contact.name ? contact.name[0].toUpperCase() : '?'}
+                        </div>
+                        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+                          <div style={{fontWeight:600,fontSize:15}}>{contact.name}</div>
+                          <div style={{fontSize:13,color:'#888'}}>{contact.email}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!newGroupName.trim() || selectedGroupContacts.length === 0) return;
+                      const groupRef = push(ref(db, 'groups'));
+                      await set(groupRef, {
+                        name: newGroupName.trim(),
+                        members: [user.uid, ...selectedGroupContacts],
+                        createdBy: user.uid,
+                        createdAt: Date.now()
+                      });
+                      setShowCreateGroupModal(false);
+                      setNewGroupName("");
+                      setSelectedGroupContacts([]);
+                    }}
+                    style={{marginTop:8, background:'#1976d2', color:'#fff', border:'none', borderRadius:8, padding:'12px 0', fontWeight:600, fontSize:17, cursor:'pointer', transition:'background 0.2s', width:'100%', maxWidth:340}}
+                    disabled={!newGroupName.trim() || selectedGroupContacts.length === 0}
+                  >
+                    Criar grupo
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Sidebar de menus na parte de baixo da lista de chats */}
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 24,
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              gap: 18,
+              zIndex: 1001,
+              pointerEvents: 'auto',
+            }}>
+              {/* Conversas */}
+              <button
+                onClick={() => {
+                  setActiveSidebar('conversas');
+                  if (selectedChat && !chatsWithMessages.includes(selectedChat)) {
+                    setSelectedChat(null);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: '#fff',
+                  color: '#23263a',
+                  border: '2px solid #111',
+                  borderRadius: 12,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                  padding: '0 12px',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0,
+                  cursor: 'pointer',
+                  outline: activeSidebar === 'conversas' ? '2px solid #1976d2' : 'none',
+                  transition: 'outline 0.2s, border 0.2s',
+                  height: 40,
+                  minHeight: 0,
+                  maxHeight: 40,
+                  margin: 2,
+                }}
+                title="Conversas"
+              >
+                <span style={{ fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 6 }}>💬</span>
+                <span style={{ fontSize: 15, color: '#23263a', fontWeight: 700 }}>Conversas</span>
+              </button>
+              {/* Grupos */}
+              <button
+                onClick={() => {
+                  setActiveSidebar('grupos');
+                  setSelectedChat(null);
+                }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: '#fff',
+                  color: '#23263a',
+                  border: '2px solid #111',
+                  borderRadius: 12,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                  padding: '0 12px',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0,
+                  cursor: 'pointer',
+                  outline: activeSidebar === 'grupos' ? '2px solid #1976d2' : 'none',
+                  transition: 'outline 0.2s, border 0.2s',
+                  height: 40,
+                  minHeight: 0,
+                  maxHeight: 40,
+                  margin: 2,
+                }}
+                title="Grupos"
+              >
+                <span style={{ fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 6 }}>👥</span>
+                <span style={{ fontSize: 15, color: '#23263a', fontWeight: 700 }}>Grupos</span>
+              </button>
+            </div>
           </section>
         </>
       )}
@@ -1046,21 +1293,66 @@ function ChatApp() {
                     </button>
                   )}
                   <div className="chat-header-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {getChatContact() && (
+                    {/* Se for grupo, mostra avatar e nome do grupo */}
+                    {groups && groups.find(g => g.id === selectedChat) ? (
+                      <>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1976d2', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 18, marginRight: 6 }}>
+                          {groups.find(g => g.id === selectedChat)?.name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <span style={{fontWeight:600, fontSize:18}}>{groups.find(g => g.id === selectedChat)?.name || 'Grupo'}</span>
+                      </>
+                    ) : (
+                      // Caso contrário, mostra avatar e nome do contato
+                      getChatContact() && (
                       getChatContact().photoURL ? (
                         <img src={getChatContact().photoURL} alt={getChatName()} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', marginRight: 6 }} />
                       ) : (
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1976d2', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 18, marginRight: 6 }}>
                           {getChatContact().displayName ? getChatContact().displayName[0].toUpperCase() : (getChatContact().email ? getChatContact().email[0].toUpperCase() : '?')}
                         </div>
+                        )
                       )
                     )}
-                    {getChatName()}
+                    {/* Nome do contato ou grupo */}
+                    {groups && groups.find(g => g.id === selectedChat) ? null : getChatName()}
                   </div>
-                  <div className="chat-header-actions">
+                  <div className="chat-header-actions" style={{ position: 'relative' }}>
                     <button><FiSearch /></button>
                     <button><FiPhone /></button>
-                    <button><FiMoreVertical /></button>
+                    {groups && groups.find(g => g.id === selectedChat) ? (
+                      <button ref={groupMenuBtnRef} onClick={() => setShowGroupMenu(v => !v)} style={{ position: 'relative' }}>
+                        <FiMoreVertical />
+                      </button>
+                    ) : (
+                      <button><FiMoreVertical /></button>
+                    )}
+                    {/* Menu flutuante do grupo */}
+                    {showGroupMenu && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 36,
+                        right: 0,
+                        background: '#fff',
+                        border: '2px solid #111',
+                        borderRadius: 12,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                        minWidth: 180,
+                        zIndex: 2000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        padding: '8px 0',
+                      }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {isSelectedChatGroup() && isUserInSelectedGroup() ? (
+                          <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#d32f2f'}} onClick={handleLeaveGroup}>Sair do grupo</button>
+                        ) : (
+                          <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#d32f2f'}} onClick={handleDeleteGroup}>Apagar grupo</button>
+                        )}
+                        <button style={{background:'none',border:'none',padding:'12px 20px',textAlign:'left',fontSize:16,cursor:'pointer',color:'#222'}} onClick={handleClearGroupChat}>Limpar conversa</button>
+                      </div>
+                    )}
                   </div>
                 </header>
                 <div className="chat-messages" ref={messagesContainerRef} style={{ position: 'relative', overflowY: 'auto', height: '100%' }}>
@@ -1170,17 +1462,92 @@ function ChatApp() {
                     gap: 8,
                     flexDirection: 'row',
                     flexWrap: 'nowrap',
-                    position: 'relative',
+                    position: 'relative', // Para ancorar o balão
                     zIndex: 2,
                     flex: '0 0 auto',
+                    opacity: isSelectedChatGroup() && !isUserInSelectedGroup() ? 0.5 : 1,
+                    pointerEvents: isSelectedChatGroup() && !isUserInSelectedGroup() ? 'none' : 'auto',
                   }}
                   onSubmit={handleSendMessage}
                   autoComplete="off"
                 >
                   {/* Ícone de emoji */}
-                  <button type="button" title="Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, marginRight: 4, color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    title="Emoji"
+                    ref={emojiBtnRef}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, marginRight: 4, color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={openEmojiModal}
+                  >
                     <FiSmile />
                   </button>
+                  {/* Modal de emojis balão dentro do form */}
+                  {showEmojiModal && (
+                    <div
+                      ref={emojiModalRef}
+                      style={isMobile ? {
+                        position: 'fixed',
+                        left: '50%',
+                        bottom: 70,
+                        transform: 'translateX(-50%)',
+                        zIndex: 9999,
+                        width: '95vw',
+                        maxWidth: 340,
+                        minWidth: 220,
+                        boxSizing: 'border-box',
+                      } : {
+                        position: 'absolute',
+                        left: '50%',
+                        bottom: 56,
+                        transform: 'translateX(-50%)',
+                        zIndex: 9999,
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      onTouchStart={e => e.stopPropagation()}
+                    >
+                      <Picker
+                        set="apple"
+                        theme="light"
+                        showPreview={false}
+                        showSkinTones={false}
+                        style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.13)', borderRadius: 14, width: '100%' }}
+                        onSelect={emoji => {
+                          setNewMessage(msg => msg + emoji.native);
+                          setShowEmojiModal(false);
+                        }}
+                        i18n={{
+                          search: 'Buscar',
+                          clear: 'Limpar',
+                          notfound: 'Nenhum emoji encontrado',
+                          skintext: 'Escolha o tom de pele padrão',
+                          categories: {
+                            search: 'Resultados da busca',
+                            recent: 'Usados recentemente',
+                            smileys: 'Emoções',
+                            people: 'Pessoas',
+                            nature: 'Animais & Natureza',
+                            foods: 'Comidas & Bebidas',
+                            activity: 'Atividades',
+                            places: 'Viagens & Lugares',
+                            objects: 'Objetos',
+                            symbols: 'Símbolos',
+                            flags: 'Bandeiras',
+                            custom: 'Personalizados',
+                          },
+                          categorieslabel: 'Categorias',
+                          skintones: {
+                            1: 'Pele padrão',
+                            2: 'Pele clara',
+                            3: 'Pele morena clara',
+                            4: 'Pele morena',
+                            5: 'Pele escura',
+                            6: 'Pele muito escura',
+                          },
+                          recent: 'Usados recentemente',
+                        }}
+                      />
+                    </div>
+                  )}
                   {/* Ícone de anexo (clip) */}
                   <button
                     type="button"
